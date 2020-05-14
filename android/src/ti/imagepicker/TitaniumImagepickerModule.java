@@ -8,34 +8,33 @@
  */
 package ti.imagepicker;
 
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.support.media.ExifInterface;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.MediaStore;
+
+import com.zhihu.matisse.Matisse;
+
+import org.appcelerator.kroll.KrollDict;
+import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.kroll.KrollModule;
 import org.appcelerator.kroll.annotations.Kroll;
 import org.appcelerator.kroll.common.Log;
-import org.appcelerator.kroll.KrollDict;
-import org.appcelerator.kroll.KrollFunction;
 import org.appcelerator.titanium.TiApplication;
-import org.appcelerator.titanium.util.TiActivitySupport;
-import org.appcelerator.titanium.util.TiActivityResultHandler;
 import org.appcelerator.titanium.TiBlob;
+import org.appcelerator.titanium.util.TiActivityResultHandler;
+import org.appcelerator.titanium.util.TiActivitySupport;
 
-import android.annotation.TargetApi;
-import android.app.Activity;
-import android.content.ContentResolver;
-import android.content.Intent;
-import android.graphics.Matrix;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.Build;
-import android.provider.MediaStore;
-import android.graphics.Bitmap;
-import android.media.ExifInterface;
-import android.database.Cursor;
-
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.io.IOException;
-
-import com.zhihu.matisse.Matisse;
 
 @Kroll.module(name="TitaniumImagepicker", id="ti.imagepicker")
 public class TitaniumImagepickerModule extends KrollModule implements TiActivityResultHandler {
@@ -112,9 +111,9 @@ public class TitaniumImagepickerModule extends KrollModule implements TiActivity
 	}
 
 	@TargetApi(Build.VERSION_CODES.ECLAIR)
-	private TiBlob computeBitmap(String url) {
+	private TiBlob computeBitmap(Uri url) {
 		ExifInterface exif = null;
-		String realUrl = getRealPathFromURI(Uri.fromFile(new File(url)));
+		String realUrl = getRealPathFromURI(Uri.fromFile(new File(String.valueOf(url))));
 
 		try {
 			exif = new ExifInterface(realUrl);
@@ -123,17 +122,18 @@ public class TitaniumImagepickerModule extends KrollModule implements TiActivity
 		}
 
 		try {
-            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+			assert exif != null;
+			int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(TiApplication.getInstance().getContentResolver(), Uri.fromFile(new File(realUrl)));
 
 			bitmap = rotateBitmap(bitmap, orientation);
 			TiBlob blob = TiBlob.blobFromImage(bitmap);
-				
+
 			if (bitmap != null) {
 				bitmap.recycle();
 				bitmap = null;
 			}
-			
+
 			return blob;
 			
 		} catch (IOException ex) {
